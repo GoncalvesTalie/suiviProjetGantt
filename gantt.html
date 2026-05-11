@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gantt — Suivi de projet V20260511</title>
+<style>
+:root{
+  /* System-font stacks — no network fetch */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  --font-serif: ui-serif, Cambria, Georgia, "Times New Roman", serif;
+  --bg:#F4EFE6; --surface:#FFFFFF; --surface-2:#FAF7F0;
+  --ink:#1A1815; --muted:#6B6660; --subtle:#A8A096;
+  --border:#E5DFD3; --border-strong:#C9C2B4;
+  --accent:#C2410C; --accent-soft:#FED7AA; --accent-faint:#FFF4E6;
+  --done:#047857; --done-bg:#D1FAE5;
+  --progress:#C2410C; --progress-bg:#FED7AA;
+  --pending:#B45309; --pending-bg:#FDE68A;
+  --notstarted:#78716C; --notstarted-bg:#E7E5E4;
+  --risk:#B91C1C; --risk-bg:#FECACA;
+  --phase:#1A1815; --today:#EA580C; --holiday:#DC2626;
+  --dep:#5B5651; --dep-violation:#B91C1C;
+  --col-width:38px; --task-col-width:620px;
+  --row-h:36px; --head-h:50px;
+  --shadow-sm:0 1px 2px rgba(26,24,21,.04);
+  --shadow-md:0 4px 12px rgba(26,24,21,.06), 0 1px 3px rgba(26,24,21,.04);
+  --shadow-lg:0 20px 40px -12px rgba(26,24,21,.18), 0 8px 16px -8px rgba(26,24,21,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:var(--font-sans);background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(circle at 25% 30%, rgba(194,65,12,.025) 0, transparent 50%),radial-gradient(circle at 75% 70%, rgba(26,24,21,.02) 0, transparent 50%);z-index:0}
+
+.header{padding:20px 28px 14px;background:var(--bg);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;align-items:end;gap:24px;position:relative;z-index:10}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand-mark{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding-bottom:6px;display:flex;align-items:center;gap:8px}
+.brand-mark::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+.brand-title{font-family:var(--font-serif);font-style:italic;font-size:34px;font-weight:400;color:var(--ink);letter-spacing:-.02em;line-height:1;border:none;background:transparent;outline:none;min-width:240px;padding:2px 4px;border-radius:4px;transition:background .15s}
+.brand-title:hover{background:rgba(0,0,0,.03)}
+.brand-title:focus{background:var(--accent-faint);box-shadow:inset 0 -2px 0 var(--accent)}
+.brand-meta{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);display:flex;gap:18px;align-items:center;padding-bottom:8px}
+.brand-meta b{color:var(--ink);font-weight:600}
+.brand-meta input{font-family:inherit;font-size:inherit;color:var(--ink);background:transparent;border:none;outline:none;font-weight:600;border-bottom:1px dashed transparent;padding:1px 2px;transition:border-color .15s}
+.brand-meta input:hover{border-bottom-color:var(--border-strong)}
+.brand-meta input:focus{border-bottom-color:var(--accent);color:var(--accent)}
+.brand-meta input[type=date]{cursor:pointer}
+
+.actions{display:flex;gap:8px;align-items:center}
+.btn{font-family:var(--font-sans);font-size:12px;font-weight:500;padding:8px 14px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--ink);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn-primary:hover{background:var(--accent);border-color:var(--accent)}
+.btn-icon{font-size:14px;line-height:1}
+
+.controls{padding:14px 28px;background:var(--surface);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;position:relative;z-index:9;box-shadow:var(--shadow-sm)}
+.control{display:flex;align-items:center;gap:14px;min-width:0}
+.control-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.control-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+
+.window-control{flex:1;min-width:0;display:flex;align-items:center;gap:14px}
+.window-track{flex:1;height:32px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;position:relative;cursor:pointer;overflow:hidden;min-width:200px}
+.window-track::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(16.66% - 1px),var(--border) calc(16.66% - 1px),var(--border) 16.66%)}
+.window-thumb{position:absolute;top:3px;bottom:3px;background:var(--ink);border-radius:4px;cursor:grab;display:flex;align-items:center;justify-content:center;transition:background .15s;min-width:30px}
+.window-thumb:hover{background:var(--accent)}
+.window-thumb:active{cursor:grabbing}
+.window-thumb::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:2px;background:var(--surface);border-radius:1px;box-shadow:0 -4px 0 var(--surface),0 4px 0 var(--surface);opacity:.6}
+.window-readout{font-family:var(--font-mono);font-size:11px;color:var(--ink);white-space:nowrap;font-weight:500;min-width:160px;text-align:right}
+.window-readout small{color:var(--muted);font-size:10px;font-weight:400}
+
+.zoom-control{display:flex;align-items:center;gap:12px}
+.segmented{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px;position:relative}
+.seg-btn{font-family:var(--font-sans);font-size:11.5px;font-weight:500;padding:6px 14px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;transition:all .2s;position:relative;z-index:1;display:flex;align-items:center;gap:6px}
+.seg-btn:hover:not(.active){color:var(--ink)}
+.seg-btn.active{background:var(--ink);color:var(--surface);box-shadow:var(--shadow-sm)}
+.seg-btn .seg-icon{font-size:13px}
+
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;background:var(--surface);margin:0 28px 24px;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);z-index:1}
+.scroll-wrap{flex:1;overflow:auto;position:relative}
+.grid{display:grid;grid-template-columns:var(--task-col-width) 1fr;min-width:max-content}
+
+.head-cell,.gantt-head{position:sticky;top:0;z-index:7;background:var(--surface-2);border-bottom:1px solid var(--border-strong);font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;height:var(--head-h)}
+.head-cell{border-right:1px solid var(--border);position:sticky;left:0;z-index:8;padding:0}
+.task-head-inner{display:grid;grid-template-columns:32px 1fr 80px 70px 70px 38px 46px 88px 64px 26px 24px;width:100%;gap:0;align-items:center;height:100%}
+.task-head-inner > *{padding:0 6px;border-right:1px dashed var(--border);display:flex;align-items:center}
+.task-head-inner > *:last-child{border-right:none}
+.task-head-inner .h-name{padding-left:10px}
+
+.gantt-head{padding:0;display:flex;flex-direction:column;background:var(--surface-2)}
+.gantt-head-tops{display:flex;height:22px;border-bottom:1px solid var(--border)}
+.gantt-head-top{font-family:var(--font-serif);font-style:italic;font-size:13.5px;color:var(--ink);text-transform:none;letter-spacing:0;font-weight:400;padding:0 10px;display:flex;align-items:center;border-right:1px solid var(--border);background:var(--surface-2);white-space:nowrap;overflow:hidden}
+.gantt-head-cells{display:flex;height:28px}
+.gantt-head-cell{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9.5px;font-weight:500;color:var(--muted);border-right:1px solid var(--border);position:relative;line-height:1.1;gap:1px}
+.gantt-head-cell.weekend{background:rgba(0,0,0,.025);color:var(--subtle)}
+.gantt-head-cell.is-today{background:var(--today);color:#fff;font-weight:700}
+.gantt-head-cell.is-today .d-num{color:#fff}
+.gantt-head-cell.has-holiday{background:rgba(220,38,38,.06)}
+.gantt-head-cell.has-holiday .d-num{color:var(--holiday)}
+.gantt-head-cell .d-num{font-size:11px;font-weight:600;color:var(--ink)}
+.gantt-head-cell .d-name{font-size:8.5px;letter-spacing:.05em;text-transform:uppercase}
+
+.task-cell{position:sticky;left:0;z-index:5;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border);display:grid;grid-template-columns:32px 1fr 80px 70px 70px 38px 56px 88px 64px 26px 14px;align-items:center;height:var(--row-h);font-size:10px;transition:background .12s}
+.task-cell:hover{background:var(--surface-2)}
+.task-cell.is-phase{background:#EDE6D6;border-bottom-color:var(--border-strong)}
+.task-cell.is-phase:hover{background:#E5DDC9}
+.task-cell > *{padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-cell input,.task-cell select{font:inherit;color:inherit;background:transparent;border:none;outline:none;width:100%;padding:6px;border-radius:3px;transition:background .12s}
+.task-cell input:hover,.task-cell select:hover{background:rgba(0,0,0,.04)}
+.task-cell input:focus,.task-cell select:focus{background:var(--accent-faint);box-shadow:inset 0 -1px 0 var(--accent)}
+
+.c-id{font-family:var(--font-mono);font-size:10px;color:var(--subtle);text-align:center;font-weight:500}
+.is-phase .c-id{color:var(--ink);font-weight:600;padding:0 !important;display:flex;align-items:center;justify-content:center}
+.phase-toggle{background:transparent;border:none;cursor:pointer;font-size:9px;color:var(--ink);width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:3px;transition:transform .18s cubic-bezier(.4,0,.2,1), background .12s;line-height:1;font-family:inherit}
+.phase-toggle:hover{background:rgba(0,0,0,.08)}
+.phase-toggle.collapsed{transform:rotate(-90deg)}
+.task-cell.is-collapsed{border-bottom-color:var(--border-strong)}
+.c-name{font-weight:500;color:var(--ink);padding-left:10px !important}
+.is-phase .c-name{font-family:var(--font-serif);font-style:italic;font-size:15px;font-weight:400;letter-spacing:-.01em}
+.c-name-input{font-weight:inherit;font-family:inherit;font-size:inherit;font-style:inherit}
+.c-owner{color:var(--muted);font-size:11.5px}
+.c-date{font-family:var(--font-mono);font-size:10.5px;color:var(--muted)}
+.c-dur{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);text-align:center}
+.c-progress{font-family:var(--font-mono);font-size:10px;text-align:center;font-weight:500;color:var(--ink)}
+.c-deps{font-family:var(--font-mono);font-size:10.5px;color:var(--muted)}
+.c-deps input{text-align:center;font-family:var(--font-mono);font-size:10.5px}
+.c-deps input::placeholder{color:var(--subtle);font-style:italic}
+
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:500;font-family:var(--font-sans);text-transform:none;letter-spacing:0;white-space:nowrap;cursor:pointer;border:1px solid transparent}
+.status-pill::before{content:'';width:5px;height:5px;border-radius:50%;display:inline-block}
+.status-done{background:var(--done-bg);color:var(--done)} .status-done::before{background:var(--done)}
+.status-progress{background:var(--progress-bg);color:var(--progress)} .status-progress::before{background:var(--progress)}
+.status-notstarted{background:var(--notstarted-bg);color:var(--notstarted)} .status-notstarted::before{background:var(--notstarted)}
+.status-pending{background:var(--pending-bg);color:var(--pending)} .status-pending::before{background:var(--pending)}
+.status-risk{background:var(--risk-bg);color:var(--risk)} .status-risk::before{background:var(--risk)}
+
+.row-del{opacity:0;cursor:pointer;color:var(--subtle);font-size:14px;text-align:center;transition:opacity .12s,color .12s;background:transparent;border:none}
+.task-cell:hover .row-del{opacity:1}
+.row-del:hover{color:var(--risk)}
+
+.note-btn{width:24px;height:24px;border:none;background:transparent;color:var(--subtle);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:3px;padding:0;opacity:.25;transition:opacity .12s,color .12s,background .12s;position:relative}
+.task-cell:hover .note-btn{opacity:.6}
+.task-cell:hover .note-btn:hover{opacity:1;color:var(--accent);background:rgba(0,0,0,.05)}
+.note-btn.has-note{opacity:1;color:var(--accent)}
+.note-btn.has-note::after{content:'';position:absolute;top:3px;right:3px;width:5px;height:5px;background:var(--accent);border:1.5px solid var(--surface);border-radius:50%}
+.task-cell:hover .note-btn.has-note::after{border-color:var(--surface-2)}
+.task-cell.is-phase:hover .note-btn.has-note::after{border-color:#E5DDC9}
+.task-cell.is-phase .note-btn.has-note::after{border-color:#EDE6D6}
+.note-btn svg{display:block;width:14px;height:14px}
+
+.gantt-row{position:relative;height:var(--row-h);border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center}
+.gantt-row.is-phase{background:linear-gradient(90deg,rgba(26,24,21,.04),rgba(26,24,21,0) 30%);border-bottom-color:var(--border-strong)}
+.gantt-cell-bg{position:absolute;top:0;bottom:0;border-right:1px solid var(--border)}
+.gantt-cell-bg.weekend{background:rgba(0,0,0,.022)}
+.gantt-cell-bg.is-today{background:rgba(234,88,12,.08)}
+.gantt-cell-bg.has-holiday{background:rgba(220,38,38,.05)}
+
+.today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:4;pointer-events:none;box-shadow:0 0 8px rgba(234,88,12,.35)}
+
+.bar{position:absolute;top:7px;height:calc(var(--row-h) - 14px);border-radius:5px;display:flex;align-items:center;padding:0 8px;font-size:10.5px;font-weight:500;color:#fff;overflow:hidden;cursor:pointer;z-index:3;box-shadow:var(--shadow-sm);transition:transform .12s,box-shadow .12s;white-space:nowrap}
+.bar:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);z-index:4}
+.bar-progress-fill{position:absolute;inset:0;background:rgba(255,255,255,.25);border-right:1px solid rgba(255,255,255,.4);border-radius:5px 0 0 5px;pointer-events:none}
+.bar-label{position:relative;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.15)}
+.bar.b-done{background:var(--done)}
+.bar.b-progress{background:var(--progress)}
+.bar.b-notstarted{background:var(--notstarted);color:rgba(255,255,255,.95)}
+.bar.b-pending{background:var(--pending)}
+.bar.b-risk{background:var(--risk)}
+.bar.b-phase{background:var(--phase);height:18px;top:9px;border-radius:2px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase}
+.bar.b-phase::before,.bar.b-phase::after{content:'';position:absolute;top:0;width:0;height:0;border-top:9px solid var(--phase)}
+.bar.b-phase::before{left:-4px;border-left:4px solid transparent}
+.bar.b-phase::after{right:-4px;border-right:4px solid transparent}
+
+.holiday-marker{position:absolute;top:0;bottom:0;pointer-events:auto;cursor:help;z-index:1;background:rgba(220,38,38,.05)}
+.holiday-marker::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;background:repeating-linear-gradient(to bottom,rgba(220,38,38,.4) 0 3px,transparent 3px 6px)}
+.freeze-band{position:absolute;top:0;bottom:0;pointer-events:auto;cursor:help;z-index:1;border-left:1px dashed var(--fb-edge);border-right:1px dashed var(--fb-edge);background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.45)),repeating-linear-gradient(135deg,var(--fb-color) 0px,var(--fb-color) 1px,transparent 1px,transparent 9px)}
+.fb-risk{--fb-color:rgba(185,28,28,.7);--fb-edge:rgba(185,28,28,.55)}
+.fb-warn{--fb-color:rgba(194,65,12,.7);--fb-edge:rgba(194,65,12,.5)}
+.fb-caution{--fb-color:rgba(180,83,9,.6);--fb-edge:rgba(180,83,9,.45)}
+.fb-info{--fb-color:rgba(29,78,216,.6);--fb-edge:rgba(29,78,216,.45)}
+.fb-closed{--fb-color:rgba(82,82,82,.55);--fb-edge:rgba(82,82,82,.45)}
+
+/* DEPENDENCY LAYER */
+.dep-layer{position:absolute;top:var(--head-h);left:var(--task-col-width);z-index:2;pointer-events:none;overflow:visible}
+.dep-arrow{fill:none;stroke:var(--dep);stroke-width:1.4;stroke-linejoin:round;stroke-linecap:round;opacity:.7;transition:opacity .15s,stroke-width .15s}
+.dep-arrow.violation{stroke:var(--dep-violation);stroke-dasharray:4 3;opacity:.85}
+.dep-arrow:hover{opacity:1;stroke-width:2}
+
+.overlay-labels{position:sticky;top:var(--head-h);height:0;z-index:4;pointer-events:none;margin-left:var(--task-col-width)}
+.overlay-label{position:absolute;top:0;font-family:var(--font-mono);font-size:9.5px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:0 0 4px 4px;background:var(--ol-bg);color:var(--ol-fg);white-space:nowrap;pointer-events:auto;cursor:help;max-width:240px;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--ol-edge);border-top:none;box-shadow:0 2px 4px rgba(0,0,0,.05)}
+.overlay-label.ol-risk{--ol-bg:#FECACA;--ol-fg:#7F1D1D;--ol-edge:#FCA5A5}
+.overlay-label.ol-warn{--ol-bg:#FED7AA;--ol-fg:#7C2D12;--ol-edge:#FDBA74}
+.overlay-label.ol-caution{--ol-bg:#FDE68A;--ol-fg:#713F12;--ol-edge:#FCD34D}
+.overlay-label.ol-info{--ol-bg:#DBEAFE;--ol-fg:#1E3A8A;--ol-edge:#BFDBFE}
+.overlay-label.ol-closed{--ol-bg:#E7E5E4;--ol-fg:#292524;--ol-edge:#D6D3D1}
+
+.add-row-bar{position:sticky;bottom:0;z-index:4;background:var(--surface-2);border-top:1px solid var(--border-strong);padding:8px 14px;display:flex;gap:8px;align-items:center}
+.add-row-btn{font-family:var(--font-sans);font-size:11.5px;font-weight:500;color:var(--muted);background:transparent;border:1px dashed var(--border-strong);padding:5px 12px;border-radius:5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.add-row-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-faint)}
+
+.drawer-backdrop{position:fixed;inset:0;background:rgba(26,24,21,.3);z-index:20;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}
+.drawer-backdrop.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:90vw;background:var(--bg);z-index:21;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(26,24,21,.25);border-left:1px solid var(--border-strong)}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:22px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;justify-content:space-between;gap:16px;background:var(--bg)}
+.drawer-title{font-family:var(--font-serif);font-style:italic;font-size:30px;font-weight:400;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.drawer-close{width:32px;height:32px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.drawer-close:hover{color:var(--ink);background:var(--surface-2);transform:rotate(90deg)}
+.drawer-body{flex:1;overflow-y:auto;padding:8px 24px 32px}
+.drawer-section{padding-top:24px}
+.drawer-section h3{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.drawer-section h3::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.drawer-section .section-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.55}
+.drawer-section .section-desc em{font-family:var(--font-serif);font-style:italic;color:var(--ink)}
+
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.preset-btn{font-family:var(--font-mono);font-size:10.5px;font-weight:500;padding:5px 10px;border-radius:4px;background:var(--surface);border:1px solid var(--border-strong);color:var(--ink);cursor:pointer;transition:all .15s}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-faint)}
+
+.item-list{display:flex;flex-direction:column;gap:8px;list-style:none}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+.item-card:hover{border-color:var(--border-strong)}
+.item-row{display:flex;gap:8px;align-items:center}
+.item-card input[type=date]{font-family:var(--font-mono);font-size:11.5px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);outline:none;color:var(--ink);min-width:0;flex-shrink:0}
+.item-card input[type=text]{flex:1;font-family:var(--font-sans);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);outline:none;color:var(--ink);min-width:0}
+.item-card input:focus{border-color:var(--accent);background:var(--surface)}
+.item-card .arrow{color:var(--muted);font-size:11px;flex-shrink:0;font-family:var(--font-mono)}
+.item-card .item-del{width:24px;height:24px;border-radius:4px;border:none;background:transparent;color:var(--subtle);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.item-card .item-del:hover{background:var(--risk-bg);color:var(--risk)}
+
+.color-picker{display:flex;gap:5px;align-items:center;padding-left:2px}
+.color-picker-label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.swatch{width:20px;height:20px;border-radius:4px;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .12s,border-color .12s}
+.swatch:hover{transform:scale(1.1)}
+.swatch.active{border-color:var(--ink)}
+.sw-risk{background:#B91C1C}.sw-warn{background:#C2410C}.sw-caution{background:#B45309}.sw-info{background:#1D4ED8}.sw-closed{background:#525252}
+
+.empty-state{font-size:12px;color:var(--subtle);font-style:italic;text-align:center;padding:14px;border:1px dashed var(--border);border-radius:6px}
+
+.add-item-btn{width:100%;font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--muted);background:transparent;border:1px dashed var(--border-strong);padding:9px 14px;border-radius:6px;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.add-item-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-faint)}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(26,24,21,.35);backdrop-filter:blur(3px);z-index:25;opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal-backdrop.open{opacity:1;pointer-events:auto}
+.modal{background:var(--bg);border-radius:12px;border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);width:480px;max-width:100%;max-height:calc(100vh - 48px);display:flex;flex-direction:column;transform:translateY(12px) scale(.98);transition:transform .22s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.modal-backdrop.open .modal{transform:none}
+.modal-header{padding:22px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.modal-title{font-family:var(--font-serif);font-style:italic;font-size:28px;font-weight:400;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.modal-body{padding:18px 24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 24px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface-2)}
+.modal .field{display:flex;flex-direction:column;gap:5px}
+.modal .field label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.modal .field label .hint{font-family:var(--font-sans);font-size:10.5px;color:var(--subtle);font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px}
+.modal .field input,.modal .field select{font-family:var(--font-sans);font-size:13px;padding:9px 11px;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);outline:none;color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s}
+.modal .field input:focus,.modal .field select:focus,.modal .field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-faint)}
+.modal .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.type-toggle{display:flex;gap:0;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:6px;padding:3px}
+.type-toggle .type-btn{flex:1;padding:8px 12px;border:none;background:transparent;font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:4px;transition:all .15s}
+.type-toggle .type-btn:hover:not(.active){color:var(--ink)}
+.type-toggle .type-btn.active{background:var(--ink);color:var(--surface);box-shadow:var(--shadow-sm)}
+
+/* NOTE MODAL */
+.note-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.note-meta .nm-id{background:var(--surface);border:1px solid var(--border-strong);border-radius:3px;padding:1px 6px;color:var(--ink);font-weight:600}
+.note-modal-title{font-family:var(--font-serif);font-style:italic;font-size:24px;font-weight:400;color:var(--ink);line-height:1.2;letter-spacing:-.01em;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-modal .modal-body textarea{font-family:var(--font-sans);font-size:13px;line-height:1.6;padding:14px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);outline:none;color:var(--ink);resize:vertical;min-height:180px;max-height:50vh;width:100%;transition:border-color .15s,box-shadow .15s}
+.note-modal .modal-body textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-faint)}
+.note-modal .modal-body textarea::placeholder{color:var(--subtle);font-style:italic}
+.note-hint{font-size:11px;color:var(--muted);margin-top:-4px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.note-hint .char-count{font-family:var(--font-mono);font-size:10px}
+
+.toast-host{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:100;pointer-events:none}
+.toast{background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-size:12px;font-weight:500;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;animation:slideUp .3s ease,fadeOut .3s ease 2.7s forwards;pointer-events:auto}
+.toast.success{background:var(--done)}
+.toast.error{background:var(--risk)}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}}
+@keyframes fadeOut{to{opacity:0;transform:translateY(10px)}}
+
+.legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 28px;font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--bg);border-top:1px solid var(--border)}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.legend-pattern{width:14px;height:10px;border-radius:2px;flex-shrink:0;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,.4)),repeating-linear-gradient(135deg,rgba(185,28,28,.7) 0 1px,transparent 1px 5px)}
+.legend-arrow{width:18px;height:10px;flex-shrink:0;position:relative}
+.legend-arrow::before{content:'';position:absolute;left:0;top:50%;width:14px;height:1.4px;background:var(--dep);opacity:.7}
+.legend-arrow::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:0;height:0;border-left:5px solid var(--dep);border-top:3px solid transparent;border-bottom:3px solid transparent;opacity:.7}
+
+#fileInput{display:none}
+.scroll-wrap::-webkit-scrollbar{width:12px;height:12px}
+.scroll-wrap::-webkit-scrollbar-track{background:var(--surface)}
+.scroll-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:6px;border:3px solid var(--surface)}
+.scroll-wrap::-webkit-scrollbar-thumb:hover{background:var(--subtle)}
+.drawer-body::-webkit-scrollbar{width:8px}
+.drawer-body::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+
+@media (max-width:1100px){
+  :root{--task-col-width:460px}
+  .task-head-inner,.task-cell{grid-template-columns:28px 1fr 64px 64px 64px 32px 40px 76px 50px 22px 20px}
+  .brand-title{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <span class="brand-mark">Projet · Gantt  · V20260511</span>
+    <input class="brand-title" id="projectName" value="Mon Projet" placeholder="Nom du projet">
+    <div class="brand-meta">
+      <span>Début&nbsp;<input type="date" id="projectStart"></span>
+      <span>Fin&nbsp;<input type="date" id="projectEnd"></span>
+      <span>PM&nbsp;<input type="text" id="projectPM" value="—" style="width:120px"></span>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="btnSettings"><span class="btn-icon">⚙</span>Paramètres</button>
+    <button class="btn" id="btnImport"><span class="btn-icon">↓</span>Importer</button>
+    <button class="btn" id="btnExport"><span class="btn-icon">↑</span>Exporter</button>
+    <button class="btn btn-primary" id="btnAddTask"><span class="btn-icon">+</span>Tâche</button>
+    <input type="file" id="fileInput" accept=".json,application/json">
+  </div>
+</header>
+
+<section class="controls">
+  <div class="control window-control">
+    <span class="control-label"><span class="dot"></span>Fenêtre</span>
+    <div class="window-track" id="windowTrack">
+      <div class="window-thumb" id="windowThumb" style="left:0;width:30%"></div>
+    </div>
+    <div class="window-readout" id="windowReadout">— → —</div>
+  </div>
+  <div class="control zoom-control">
+    <span class="control-label">Zoom</span>
+    <div class="segmented" id="zoomSegmented">
+      <button class="seg-btn" data-zoom="day"><span class="seg-icon">·</span>Jour</button>
+      <button class="seg-btn active" data-zoom="week"><span class="seg-icon">▤</span>Semaine</button>
+      <button class="seg-btn" data-zoom="month"><span class="seg-icon">▦</span>Mois</button>
+    </div>
+  </div>
+</section>
+
+<main class="main">
+  <div class="scroll-wrap" id="scrollWrap">
+    <div class="grid" id="grid"></div>
+    <svg class="dep-layer" id="depLayer" width="0" height="0">
+      <defs>
+        <marker id="dep-arrow-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--dep)"/>
+        </marker>
+        <marker id="dep-arrow-head-violation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--dep-violation)"/>
+        </marker>
+      </defs>
+    </svg>
+    <div class="overlay-labels" id="overlayLabels"></div>
+    <div class="add-row-bar">
+      <button class="add-row-btn" id="addRowBtn">+ Nouvelle tâche</button>
+      <button class="add-row-btn" id="addPhaseBtn">+ Nouvelle phase</button>
+    </div>
+  </div>
+</main>
+
+<footer class="legend">
+  <span class="legend-item"><span class="legend-swatch" style="background:var(--phase)"></span>Phase</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:var(--done)"></span>Terminé</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:var(--progress)"></span>En cours</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:var(--notstarted)"></span>Non démarré</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:var(--risk)"></span>En retard</span>
+  <span class="legend-item"><span class="legend-pattern"></span>Période sensible</span>
+  <span class="legend-item"><span class="legend-arrow"></span>Dépendance</span>
+  <span class="legend-item"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 2.5 H10 L13 5.5 V13 a0.5 0.5 0 0 1 -0.5 0.5 H3.5 a0.5 0.5 0 0 1 -0.5 -0.5 Z"/><path d="M10 2.5 V5.5 H13"/></svg>Note</span>
+  <span class="legend-item" style="margin-left:auto">▼ phase = clic pour replier · ⇧+clic = tout · ⇧+molette panne · ←→ flèches · 1/2/3 zooms</span>
+</footer>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer">
+  <header class="drawer-header">
+    <h2 class="drawer-title">Paramètres</h2>
+    <button class="drawer-close" id="drawerClose" title="Fermer">×</button>
+  </header>
+  <div class="drawer-body">
+
+    <section class="drawer-section">
+      <h3>Jours fériés</h3>
+      <p class="section-desc">Dates marquées sur le calendrier par un trait pointillé rouge. Utile pour signaler que <em>rien ne doit avancer</em> ces jours-là.</p>
+      <div class="preset-row" id="holidayPresets"></div>
+      <ul class="item-list" id="holidayList"></ul>
+      <button class="add-item-btn" id="addHoliday">+ Ajouter un jour férié</button>
+    </section>
+
+    <section class="drawer-section">
+      <h3>Périodes sensibles</h3>
+      <p class="section-desc">Plages temporelles à signaler — <em>gel des changements, fermeture, vacances scolaires, vigilance accrue.</em> Affichées comme bandes hachurées sur le Gantt.</p>
+      <ul class="item-list" id="freezeList"></ul>
+      <button class="add-item-btn" id="addFreeze">+ Ajouter une période</button>
+    </section>
+
+    <section class="drawer-section">
+      <h3>Dépendances · syntaxe</h3>
+      <p class="section-desc">Dans la colonne <em>Préc.</em> du tableau, saisissez les ID des tâches prédécesseurs séparés par des virgules. Suffixez par un type pour autre chose que <b>Finish-to-Start</b> :</p>
+      <ul style="list-style:none;font-family:var(--font-mono);font-size:11px;color:var(--ink);display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+        <li><b>3</b> &nbsp;→ FS (Fin → Début, défaut)</li>
+        <li><b>3SS</b> &nbsp;→ Start-to-Start</li>
+        <li><b>3FF</b> &nbsp;→ Finish-to-Finish</li>
+        <li><b>3SF</b> &nbsp;→ Start-to-Finish</li>
+        <li><b>3, 5SS, 7</b> &nbsp;→ plusieurs prédécesseurs</li>
+      </ul>
+      <p class="section-desc" style="margin-top:10px">Les dépendances <em>violées</em> (prédécesseur incompatible) apparaissent en flèche rouge pointillée.</p>
+    </section>
+
+  </div>
+</aside>
+
+<!-- Note edit modal -->
+<div class="modal-backdrop" id="noteModalBackdrop">
+  <div class="modal note-modal" id="noteModal">
+    <header class="modal-header">
+      <div>
+        <div class="note-meta" id="noteModalMeta"><span class="nm-id">#1</span><span>Tâche</span></div>
+        <h2 class="note-modal-title" id="noteModalTitle">—</h2>
+      </div>
+      <button class="drawer-close" id="noteModalCloseBtn" title="Fermer">×</button>
+    </header>
+    <div class="modal-body">
+      <div class="field">
+        <textarea id="noteContent" rows="10" placeholder="Vos commentaires, points d'attention, contexte, décisions…"></textarea>
+      </div>
+      <div class="note-hint">
+        <span>Retours à la ligne préservés à l'affichage.</span>
+        <span class="char-count"><span id="noteCharCount">0</span> car.</span>
+      </div>
+    </div>
+    <footer class="modal-footer">
+      <button class="btn" id="noteModalDeleteBtn" style="margin-right:auto;color:var(--risk);border-color:var(--risk-bg)">Supprimer la note</button>
+      <button class="btn" id="noteModalCancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="noteModalSubmitBtn">Enregistrer</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Insert/Add modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal" data-current-type="task">
+    <header class="modal-header">
+      <h2 class="modal-title" id="modalTitle">Nouvelle tâche</h2>
+      <button class="drawer-close" id="modalCloseBtn" title="Fermer">×</button>
+    </header>
+    <div class="modal-body">
+
+      <div class="field">
+        <label>Type</label>
+        <div class="type-toggle" id="modalType">
+          <button class="type-btn active" data-type="task">Tâche</button>
+          <button class="type-btn" data-type="phase">Phase</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Nom</label>
+        <input id="modalName" type="text" placeholder="Nom…" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Insérer</label>
+        <select id="modalInsertAfter"></select>
+      </div>
+
+      <div class="field task-only">
+        <label>Responsable</label>
+        <input id="modalOwner" type="text" placeholder="—" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Durée (jours)</label>
+        <input id="modalDuration" type="number" min="1" value="5">
+      </div>
+
+      <div class="field-row task-only">
+        <div class="field">
+          <label>Statut</label>
+          <select id="modalStatus">
+            <option value="notstarted">Non démarré</option>
+            <option value="progress">En cours</option>
+            <option value="done">Terminé</option>
+            <option value="pending">En attente</option>
+            <option value="risk">En retard</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Avancement (%)</label>
+          <input id="modalProgress" type="number" min="0" max="100" value="0">
+        </div>
+      </div>
+
+      <div class="field task-only">
+        <label>Prédécesseurs <span class="hint">— ex&nbsp;: 3, 5SS, 7</span></label>
+        <input id="modalDeps" type="text" placeholder="—" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label>Note <span class="hint">— optionnelle</span></label>
+        <textarea id="modalNotes" rows="2" placeholder="Contexte, points d'attention…" style="font-family:var(--font-sans);font-size:13px;line-height:1.5;padding:9px 11px;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);outline:none;color:var(--ink);width:100%;resize:vertical;min-height:48px;max-height:160px;transition:border-color .15s,box-shadow .15s"></textarea>
+      </div>
+
+    </div>
+    <footer class="modal-footer">
+      <button class="btn" id="modalCancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="modalSubmitBtn">Ajouter</button>
+    </footer>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<script>
+// ─── HELPERS ─────────────────────────────────────────────────────────────
+const MS = 86400000;
+const fmtISO = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}` };
+const parseISO = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) };
+const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const daysBetween = (a,b) => Math.round((b-a)/MS);
+const fmtDate = d => d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+const fmtDateLong = d => d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+const fmtMonthLong = d => d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+const startOfWeek = d => { const r=new Date(d); const day=(r.getDay()+6)%7; r.setDate(r.getDate()-day); r.setHours(0,0,0,0); return r };
+const startOfMonth = d => new Date(d.getFullYear(),d.getMonth(),1);
+const endOfMonth = d => new Date(d.getFullYear(),d.getMonth()+1,0);
+const isoWeek = d => { const x=new Date(d.getTime()); x.setHours(0,0,0,0); x.setDate(x.getDate()+3-(x.getDay()+6)%7); const w1=new Date(x.getFullYear(),0,4); return 1+Math.round(((x-w1)/MS-3+(w1.getDay()+6)%7)/7) };
+const escapeHtml = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ─── EASTER + FR HOLIDAYS ────────────────────────────────────────────────
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
+function frenchHolidays(y){const e=easter(y);return[
+  {date:`${y}-01-01`,name:`Jour de l'An`},
+  {date:fmtISO(addDays(e,1)),name:'Lundi de Pâques'},
+  {date:`${y}-05-01`,name:'Fête du Travail'},
+  {date:`${y}-05-08`,name:'Victoire 1945'},
+  {date:fmtISO(addDays(e,39)),name:'Ascension'},
+  {date:fmtISO(addDays(e,50)),name:'Lundi de Pentecôte'},
+  {date:`${y}-07-14`,name:'Fête nationale'},
+  {date:`${y}-08-15`,name:'Assomption'},
+  {date:`${y}-11-01`,name:'Toussaint'},
+  {date:`${y}-11-11`,name:'Armistice 1918'},
+  {date:`${y}-12-25`,name:'Noël'},
+]}
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+const STATUS = [
+  {id:'done',label:'Terminé',cls:'status-done',bar:'b-done'},
+  {id:'progress',label:'En cours',cls:'status-progress',bar:'b-progress'},
+  {id:'notstarted',label:'Non démarré',cls:'status-notstarted',bar:'b-notstarted'},
+  {id:'pending',label:'En attente',cls:'status-pending',bar:'b-pending'},
+  {id:'risk',label:'En retard',cls:'status-risk',bar:'b-risk'},
+];
+const FREEZE_COLORS = [
+  {id:'risk',label:'Critique'},
+  {id:'warn',label:'Vigilance'},
+  {id:'caution',label:'Attention'},
+  {id:'info',label:'Information'},
+  {id:'closed',label:'Fermeture'},
+];
+const ZOOM = {
+  day:   {step:1, width:38, unit:'jours'},
+  week:  {step:7, width:64, unit:'semaines'},
+  month: {step:30,width:120,unit:'mois'},
+};
+
+function demoProject(){
+  return {
+    name:'Refonte plateforme client',
+    pm:'A. Martin',
+    start:'2025-06-01',
+    end:'2025-11-30',
+    tasks:[
+      {id:1, name:'PHASE 1 — Cadrage',     owner:'',      startOffset:0,   duration:14, progress:100, status:'done',       phase:true},
+      {id:2, name:'Lancement projet',       owner:'Alice', startOffset:0,   duration:5,  progress:100, status:'done', deps:[]},
+      {id:3, name:'Analyse des besoins',    owner:'Bob',   startOffset:3,   duration:8,  progress:100, status:'done', deps:[{id:2,type:'SS'}]},
+      {id:4, name:'Étude de faisabilité',   owner:'Alice', startOffset:8,   duration:5,  progress:100, status:'done', deps:[{id:3,type:'FS'}]},
+      {id:5, name:'Validation phase 1',     owner:'Alice', startOffset:12,  duration:3,  progress:100, status:'done', deps:[{id:4,type:'FS'}]},
+      {id:6, name:'PHASE 2 — Conception',   owner:'',      startOffset:15,  duration:18, progress:60,  status:'progress',   phase:true},
+      {id:7, name:'Architecture système',   owner:'Carol', startOffset:15,  duration:10, progress:80,  status:'progress', deps:[{id:5,type:'FS'}]},
+      {id:8, name:'Maquettes UI/UX',        owner:'David', startOffset:20,  duration:12, progress:60,  status:'progress', deps:[{id:7,type:'SS'}]},
+      {id:9, name:'Modèle de données',      owner:'Bob',   startOffset:22,  duration:8,  progress:40,  status:'progress', deps:[{id:7,type:'FS'}]},
+      {id:10,name:'Revue de conception',    owner:'Alice', startOffset:30,  duration:3,  progress:0,   status:'notstarted', deps:[{id:8,type:'FS'},{id:9,type:'FS'}]},
+      {id:11,name:'PHASE 3 — Développement',owner:'',      startOffset:33,  duration:30, progress:20,  status:'progress',   phase:true},
+      {id:12,name:'Développement back-end', owner:'Bob',   startOffset:33,  duration:25, progress:30,  status:'progress', deps:[{id:10,type:'FS'}]},
+      {id:13,name:'Développement front-end',owner:'David', startOffset:38,  duration:22, progress:20,  status:'progress', deps:[{id:10,type:'FS'}]},
+      {id:14,name:'Intégrations API',       owner:'Carol', startOffset:45,  duration:15, progress:0,   status:'notstarted', deps:[{id:12,type:'SS'}]},
+      {id:15,name:'Tests unitaires',        owner:'Bob',   startOffset:55,  duration:10, progress:0,   status:'notstarted', deps:[{id:12,type:'FS'},{id:13,type:'FS'}]},
+      {id:16,name:'PHASE 4 — Recette',      owner:'',      startOffset:65,  duration:28, progress:0,   status:'notstarted', phase:true},
+      {id:17,name:'Tests d\'intégration',   owner:'Carol', startOffset:65,  duration:10, progress:0,   status:'notstarted', deps:[{id:15,type:'FS'}]},
+      {id:18,name:'Tests utilisateurs',     owner:'Alice', startOffset:72,  duration:12, progress:0,   status:'notstarted', deps:[{id:17,type:'SS'}]},
+      {id:19,name:'Correction des bugs',    owner:'Bob',   startOffset:80,  duration:8,  progress:0,   status:'notstarted', deps:[{id:17,type:'FS'}]},
+      {id:20,name:'Validation finale',      owner:'Alice', startOffset:88,  duration:5,  progress:0,   status:'notstarted', deps:[{id:18,type:'FF'},{id:19,type:'FS'}]},
+      {id:21,name:'PHASE 5 — Déploiement',  owner:'',      startOffset:93,  duration:20, progress:0,   status:'notstarted', phase:true},
+      {id:22,name:'Préparation infra prod', owner:'Carol', startOffset:93,  duration:7,  progress:0,   status:'notstarted', deps:[{id:20,type:'FS'}]},
+      {id:23,name:'Migration des données',  owner:'Bob',   startOffset:98,  duration:5,  progress:0,   status:'notstarted', deps:[{id:22,type:'FS'}]},
+      {id:24,name:'Déploiement production', owner:'Alice', startOffset:103, duration:3,  progress:0,   status:'notstarted', deps:[{id:23,type:'FS'}]},
+      {id:25,name:'Documentation & clôture',owner:'David', startOffset:105, duration:8,  progress:0,   status:'notstarted', deps:[{id:24,type:'SS'}]},
+    ],
+    holidays: frenchHolidays(2025).filter(h=>{const d=parseISO(h.date);return d>=parseISO('2025-06-01')&&d<=parseISO('2025-11-30')}).map((h,i)=>({id:i+1,...h})),
+    freezes: [
+      {id:1, name:'Gel des changements — vacances août',  start:'2025-08-04', end:'2025-08-22', color:'warn'},
+      {id:2, name:'Code freeze pré-déploiement',           start:'2025-11-15', end:'2025-11-25', color:'risk'},
+    ],
+  };
+}
+
+let state = {
+  project: demoProject(),
+  view: {zoom:'week', windowStart:0, windowDays:84},
+};
+
+// ─── DERIVED ─────────────────────────────────────────────────────────────
+const projStart = () => parseISO(state.project.start);
+const projEnd = () => parseISO(state.project.end);
+const projDuration = () => daysBetween(projStart(), projEnd()) + 1;
+const viewStartDate = () => addDays(projStart(), state.view.windowStart);
+const viewEndDate = () => addDays(viewStartDate(), state.view.windowDays - 1);
+const taskStart = t => addDays(projStart(), t.startOffset);
+const taskEnd = t => addDays(projStart(), t.startOffset + Math.max(t.duration-1, 0));
+
+// ─── DEPS PARSING ────────────────────────────────────────────────────────
+function parseDeps(str){
+  if(!str || !str.trim()) return [];
+  return str.split(',').map(s=>{
+    const m = s.trim().match(/^(\d+)(FS|SS|FF|SF)?$/i);
+    if(!m) return null;
+    return {id:+m[1], type:(m[2]||'FS').toUpperCase()};
+  }).filter(Boolean);
+}
+function formatDeps(deps){
+  if(!deps || !deps.length) return '';
+  return deps.map(d => d.type==='FS' ? d.id : `${d.id}${d.type}`).join(',');
+}
+
+// ─── COLUMNS (calendar-aligned) ──────────────────────────────────────────
+let columns = [];
+let totalGanttWidth = 0;
+
+function buildColumns(){
+  columns = [];
+  const z = ZOOM[state.view.zoom];
+  const vs = viewStartDate();
+  const ve = viewEndDate();
+  if(state.view.zoom === 'day'){
+    let d = new Date(vs);
+    while(d <= ve){ columns.push({start:new Date(d), end:new Date(d), width:z.width}); d = addDays(d, 1); }
+  } else if(state.view.zoom === 'week'){
+    let ws = startOfWeek(vs);
+    while(ws <= ve){ const we = addDays(ws, 6); columns.push({start:new Date(ws), end:new Date(we), width:z.width}); ws = addDays(ws, 7); }
+  } else {
+    let ms = startOfMonth(vs);
+    while(ms <= ve){ const me = endOfMonth(ms); columns.push({start:new Date(ms), end:new Date(me), width:z.width}); ms = new Date(ms.getFullYear(), ms.getMonth()+1, 1); }
+  }
+  totalGanttWidth = columns.reduce((s,c)=>s+c.width, 0);
+}
+
+function dateToPx(date){
+  if(columns.length === 0) return 0;
+  if(date < columns[0].start){
+    const c = columns[0]; const daysIn = daysBetween(c.start, c.end) + 1;
+    return daysBetween(c.start, date) * (c.width / daysIn);
+  }
+  let px = 0;
+  for(const c of columns){
+    if(date <= c.end){
+      const daysIn = daysBetween(c.start, c.end) + 1;
+      return px + daysBetween(c.start, date) * (c.width / daysIn);
+    }
+    px += c.width;
+  }
+  const last = columns[columns.length-1];
+  const daysIn = daysBetween(last.start, last.end) + 1;
+  return px + daysBetween(addDays(last.end, 1), date) * (last.width / daysIn);
+}
+
+// ─── PHASE FOLD/UNFOLD HELPERS ───────────────────────────────────────────
+// Map each non-phase task id → its parent phase id (the phase preceding it)
+function getPhaseByTaskId(){
+  const map = new Map();
+  let cur = null;
+  for(const t of state.project.tasks){
+    if(t.phase) cur = t;
+    else if(cur) map.set(t.id, cur.id);
+  }
+  return map;
+}
+// Tasks actually rendered (phases always visible; non-phase tasks hidden when their phase is collapsed)
+function getVisibleTasks(){
+  const out = [];
+  let collapsed = false;
+  for(const t of state.project.tasks){
+    if(t.phase){ collapsed = !!t.collapsed; out.push(t); }
+    else if(!collapsed) out.push(t);
+  }
+  return out;
+}
+// Resolve a depended-upon id to the actually visible row (its phase if hidden)
+function resolveVisibleEnd(taskId, visibleIndex, phaseMap){
+  if(visibleIndex.has(taskId)) return {id:taskId, idx:visibleIndex.get(taskId)};
+  const phaseId = phaseMap.get(taskId);
+  if(phaseId != null && visibleIndex.has(phaseId)) return {id:phaseId, idx:visibleIndex.get(phaseId)};
+  return null;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────
+const grid = document.getElementById('grid');
+const depLayer = document.getElementById('depLayer');
+const overlayLabelsEl = document.getElementById('overlayLabels');
+const scrollWrap = document.getElementById('scrollWrap');
+
+function render(){
+  buildColumns();
+  document.documentElement.style.setProperty('--col-width', ZOOM[state.view.zoom].width + 'px');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const holidayDates = state.project.holidays.map(h => parseISO(h.date));
+  const colHolidayFlags = columns.map(c => holidayDates.some(hd => hd >= c.start && hd <= c.end));
+
+  let html = '';
+
+  // Task table header
+  html += `<div class="head-cell"><div class="task-head-inner">
+    <span class="h-id">ID</span><span class="h-name">Tâche</span>
+    <span>Resp.</span><span>Début</span><span>Fin</span>
+    <span>J</span><span>%</span><span>Statut</span>
+    <span title="Prédécesseurs">Préc.</span><span title="Note"></span><span></span>
+  </div></div>`;
+
+  // Gantt header
+  html += `<div class="gantt-head">`;
+  html += `<div class="gantt-head-tops">`;
+  const groups = [];
+  let cur = null;
+  for(const c of columns){
+    const label = state.view.zoom === 'month' ? String(c.start.getFullYear()) : fmtMonthLong(c.start);
+    if(!cur || cur.label !== label){ cur = {label, width:0}; groups.push(cur); }
+    cur.width += c.width;
+  }
+  for(const g of groups){
+    html += `<div class="gantt-head-top" style="width:${g.width}px">${escapeHtml(g.label)}</div>`;
+  }
+  html += `</div>`;
+  html += `<div class="gantt-head-cells">`;
+  columns.forEach((c, idx) => {
+    const dow = c.start.getDay();
+    const isWeekend = (dow===0||dow===6) && state.view.zoom==='day';
+    const isToday = today >= c.start && today <= c.end;
+    const hasHoliday = colHolidayFlags[idx];
+    let labelTop, labelBot;
+    if(state.view.zoom === 'day'){
+      labelTop = c.start.getDate();
+      labelBot = ['D','L','M','M','J','V','S'][dow];
+    } else if(state.view.zoom === 'week'){
+      labelTop = 'S' + isoWeek(c.start);
+      labelBot = c.start.getDate()+'–'+c.end.getDate();
+    } else {
+      labelTop = c.start.toLocaleDateString('fr-FR',{month:'short'}).replace('.','');
+      labelBot = '';
+    }
+    html += `<div class="gantt-head-cell ${isWeekend?'weekend':''} ${isToday?'is-today':''} ${hasHoliday?'has-holiday':''}" style="width:${c.width}px">
+      <span class="d-num">${labelTop}</span>
+      ${labelBot ? `<span class="d-name">${labelBot}</span>` : ''}
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // Task rows — only visible (phases always shown, children hidden when phase collapsed)
+  const visibleTasks = getVisibleTasks();
+  for(const t of visibleTasks){
+    const isPhase = !!t.phase;
+    const tStart = taskStart(t), tEnd = taskEnd(t);
+    const status = STATUS.find(s => s.id===t.status) || STATUS[2];
+    const depsStr = formatDeps(t.deps);
+
+    // LEFT
+    html += `<div class="task-cell ${isPhase?'is-phase':''} ${isPhase && t.collapsed?'is-collapsed':''}" data-id="${t.id}">
+      <span class="c-id">${isPhase
+        ? `<button class="phase-toggle ${t.collapsed?'collapsed':''}" data-toggle="${t.id}" title="Replier/Déplier · Maj+clic pour tout">▼</button>`
+        : t.id}</span>
+      <span class="c-name"><input class="c-name-input" data-field="name" value="${escapeHtml(t.name)}"></span>
+      <span class="c-owner"><input data-field="owner" value="${escapeHtml(t.owner||'')}" placeholder="—"></span>
+      <span class="c-date"><input type="date" data-field="startDate" value="${fmtISO(tStart)}"></span>
+      <span class="c-date"><input type="date" data-field="endDate" value="${fmtISO(tEnd)}"></span>
+      <span class="c-dur">${t.duration}</span>
+      <span class="c-progress"><input type="number" data-field="progress" min="0" max="100" value="${t.progress}" style="text-align:center"></span>
+      <span class="c-status">
+        <select data-field="status" class="status-pill ${status.cls}">
+          ${STATUS.map(s => `<option value="${s.id}" ${s.id===t.status?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </span>
+      <span class="c-deps"><input data-field="deps" value="${escapeHtml(depsStr)}" placeholder="—" title="ex: 3, 5SS, 7"></span>
+      <button class="note-btn ${t.notes && t.notes.trim() ? 'has-note' : ''}" data-note="${t.id}" title="${t.notes && t.notes.trim() ? escapeHtml(t.notes.trim().split('\n')[0].slice(0,120)) + (t.notes.length > 120 ? '…' : '') : 'Ajouter une note'}">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5 H10 L13 5.5 V13 a0.5 0.5 0 0 1 -0.5 0.5 H3.5 a0.5 0.5 0 0 1 -0.5 -0.5 Z"/><path d="M10 2.5 V5.5 H13"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5"/><line x1="5.5" y1="11" x2="9" y2="11"/></svg>
+      </button>
+      <button class="row-del" data-del="${t.id}" title="Supprimer">×</button>
+    </div>`;
+
+    // RIGHT — gantt row
+    html += `<div class="gantt-row ${isPhase?'is-phase':''}" data-id="${t.id}" style="width:${totalGanttWidth}px">`;
+
+    // Cell backgrounds
+    let xOff = 0;
+    columns.forEach((c, idx) => {
+      const dow = c.start.getDay();
+      const isWeekend = (dow===0||dow===6) && state.view.zoom==='day';
+      const isToday = today >= c.start && today <= c.end;
+      const hasHoliday = colHolidayFlags[idx];
+      html += `<div class="gantt-cell-bg ${isWeekend?'weekend':''} ${isToday?'is-today':''} ${hasHoliday?'has-holiday':''}" style="left:${xOff}px;width:${c.width}px"></div>`;
+      xOff += c.width;
+    });
+
+    if(columns.length > 0){
+      // Freeze bands
+      for(const fz of state.project.freezes){
+        const fs = parseISO(fz.start), fe = parseISO(fz.end);
+        if(fe < columns[0].start || fs > columns[columns.length-1].end) continue;
+        const left = dateToPx(fs);
+        const right = dateToPx(addDays(fe, 1));
+        if(right - left <= 0) continue;
+        html += `<div class="freeze-band fb-${fz.color}" style="left:${left}px;width:${right-left}px" title="${escapeHtml(fz.name)} · ${fmtDateLong(fs)} → ${fmtDateLong(fe)}"></div>`;
+      }
+      // Holiday markers
+      for(const h of state.project.holidays){
+        const hd = parseISO(h.date);
+        if(hd < columns[0].start || hd > columns[columns.length-1].end) continue;
+        const left = dateToPx(hd);
+        const right = dateToPx(addDays(hd, 1));
+        html += `<div class="holiday-marker" style="left:${left}px;width:${right-left}px" title="${escapeHtml(h.name)} · ${fmtDateLong(hd)}"></div>`;
+      }
+      // Today line
+      if(today >= columns[0].start && today <= columns[columns.length-1].end){
+        html += `<div class="today-line" style="left:${dateToPx(today)}px"></div>`;
+      }
+      // Bar
+      if(t.duration > 0 && tStart <= columns[columns.length-1].end && tEnd >= columns[0].start){
+        const leftPx = dateToPx(tStart);
+        const rightPx = dateToPx(addDays(tEnd, 1));
+        const width = Math.max(rightPx - leftPx, 4);
+        const showLabel = width > 60;
+        const fillPct = t.progress || 0;
+        const barCls = isPhase ? 'b-phase' : status.bar;
+        html += `<div class="bar ${barCls}" style="left:${leftPx}px;width:${width}px" data-bar="${t.id}" title="${escapeHtml(t.name)} · ${fmtDateLong(tStart)} → ${fmtDateLong(tEnd)} · ${t.progress}%">
+          ${fillPct>0 && !isPhase ? `<div class="bar-progress-fill" style="width:${fillPct}%"></div>` : ''}
+          ${showLabel ? `<span class="bar-label">${escapeHtml(t.name)}</span>` : ''}
+        </div>`;
+      }
+    }
+
+    html += `</div>`;
+  }
+
+  grid.innerHTML = html;
+  renderDependencies();
+  renderOverlayLabels();
+  bindRowEvents();
+  updateWindowReadout();
+  updateWindowThumb();
+}
+
+function renderOverlayLabels(){
+  if(columns.length === 0){ overlayLabelsEl.innerHTML = ''; return; }
+  const last = columns[columns.length-1];
+  let html = '';
+  for(const fz of state.project.freezes){
+    const fs = parseISO(fz.start), fe = parseISO(fz.end);
+    if(fe < columns[0].start || fs > last.end) continue;
+    const left = Math.max(dateToPx(fs), 0);
+    html += `<div class="overlay-label ol-${fz.color}" style="left:${left}px" title="${escapeHtml(fz.name)} (${fmtDateLong(fs)} → ${fmtDateLong(fe)})">⚠ ${escapeHtml(fz.name)}</div>`;
+  }
+  overlayLabelsEl.innerHTML = html;
+}
+
+// ─── DEPENDENCY ARROWS ───────────────────────────────────────────────────
+function renderDependencies(){
+  const rowH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-h')) || 36;
+  const visibleTasks = getVisibleTasks();
+  const visibleIndex = new Map();
+  visibleTasks.forEach((t, i) => visibleIndex.set(t.id, i));
+  const phaseMap = getPhaseByTaskId();
+  const taskById = new Map(state.project.tasks.map(t => [t.id, t]));
+
+  const totalH = visibleTasks.length * rowH;
+  depLayer.setAttribute('width', totalGanttWidth);
+  depLayer.setAttribute('height', totalH);
+  depLayer.style.width = totalGanttWidth + 'px';
+  depLayer.style.height = totalH + 'px';
+
+  // Wipe old paths but keep <defs>
+  const defs = depLayer.querySelector('defs');
+  depLayer.innerHTML = '';
+  if(defs) depLayer.appendChild(defs);
+
+  if(columns.length === 0) return;
+  const firstColStart = columns[0].start;
+  const lastColEnd = columns[columns.length-1].end;
+
+  const STEP_OUT = 10;
+  const ELBOW_PAD = 8;
+  const BACKWARD_PAD = 18;
+
+  for(const t of state.project.tasks){
+    if(!t.deps || !t.deps.length) continue;
+
+    // Resolve the successor — if hidden by a collapsed phase, use the phase row instead
+    const sucResolved = resolveVisibleEnd(t.id, visibleIndex, phaseMap);
+    if(!sucResolved) continue;
+    const sucTask = taskById.get(sucResolved.id);
+    if(!sucTask) continue;
+    const tStart = taskStart(sucTask), tEnd = taskEnd(sucTask);
+    const sucLeft = dateToPx(tStart);
+    const sucRight = dateToPx(addDays(tEnd, 1));
+    const sucY = sucResolved.idx * rowH + rowH / 2;
+
+    for(const dep of t.deps){
+      const predResolved = resolveVisibleEnd(dep.id, visibleIndex, phaseMap);
+      if(!predResolved) continue;
+      // Both endpoints collapsed onto the same row → would draw a loop; skip
+      if(predResolved.idx === sucResolved.idx) continue;
+      const pred = taskById.get(predResolved.id);
+      if(!pred) continue;
+
+      const type = dep.type || 'FS';
+      const pStart = taskStart(pred), pEnd = taskEnd(pred);
+
+      if((pEnd < firstColStart && tEnd < firstColStart) || (pStart > lastColEnd && tStart > lastColEnd)) continue;
+
+      const predLeft = dateToPx(pStart);
+      const predRight = dateToPx(addDays(pEnd, 1));
+      const predY = predResolved.idx * rowH + rowH / 2;
+
+      // Endpoints based on type
+      let x1, x2, tipX;
+      let endsOnLeft = true;  // arrow tip enters successor from left?
+      if(type === 'FS'){      x1 = predRight; x2 = sucLeft;  endsOnLeft = true; }
+      else if(type === 'SS'){ x1 = predLeft;  x2 = sucLeft;  endsOnLeft = true; }
+      else if(type === 'FF'){ x1 = predRight; x2 = sucRight; endsOnLeft = false; }
+      else {                  x1 = predLeft;  x2 = sucRight; endsOnLeft = false; } // SF
+
+      // Validation
+      let violation = false;
+      if(type === 'FS' && pEnd >= tStart) violation = true;
+      else if(type === 'SS' && pStart > tStart) violation = true;
+      else if(type === 'FF' && pEnd > tEnd) violation = true;
+      else if(type === 'SF' && pStart >= tEnd) violation = true;
+
+      // Build path
+      tipX = endsOnLeft ? x2 - 2 : x2 + 2;
+      const tipDir = endsOnLeft ? -1 : 1;          // direction of arrowhead
+      const stepOut = type==='FS' || type==='FF' ? STEP_OUT : -STEP_OUT;  // direction we step out of pred
+      // Actually for SS/SF we step LEFT out of pred.start, for FS/FF we step RIGHT out of pred.end
+      const outSign = (type==='FS' || type==='FF') ? 1 : -1;
+      const xOut = x1 + outSign * STEP_OUT;
+
+      // Approach point near successor
+      const approachSign = endsOnLeft ? -1 : 1;
+      const xApproach = x2 + approachSign * ELBOW_PAD;
+
+      let d;
+      // Standard routing if approach point is "past" the out point in the right direction
+      const forward = endsOnLeft ? (xApproach >= xOut) : (xApproach <= xOut);
+      if(forward){
+        d = `M ${x1} ${predY} L ${xOut} ${predY} L ${xOut} ${sucY} L ${xApproach} ${sucY} L ${tipX} ${sucY}`;
+      } else {
+        // Need to route around — go further, down/up, then back
+        const detourX = endsOnLeft ? x2 - BACKWARD_PAD : x2 + BACKWARD_PAD;
+        const midY = (predY + sucY) / 2;
+        d = `M ${x1} ${predY} L ${xOut} ${predY} L ${xOut} ${midY} L ${detourX} ${midY} L ${detourX} ${sucY} L ${tipX} ${sucY}`;
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'dep-arrow' + (violation ? ' violation' : ''));
+      path.setAttribute('marker-end', violation ? 'url(#dep-arrow-head-violation)' : 'url(#dep-arrow-head)');
+      const violationMsg = violation ? ' (incohérence)' : '';
+      path.innerHTML = `<title>${escapeHtml(pred.name)} → ${escapeHtml(t.name)} (${type})${violationMsg}</title>`;
+      depLayer.appendChild(path);
+    }
+  }
+}
+
+// ─── ROW EVENTS ──────────────────────────────────────────────────────────
+function bindRowEvents(){
+  grid.querySelectorAll('.task-cell input, .task-cell select').forEach(inp => {
+    inp.addEventListener('change', onCellChange);
+  });
+  grid.querySelectorAll('.phase-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +btn.dataset.toggle;
+      const t = state.project.tasks.find(x => x.id === id);
+      if(!t || !t.phase) return;
+      if(e.shiftKey){
+        // Shift+click: toggle ALL phases to match the inverse of this one's current state
+        const target = !t.collapsed;
+        for(const p of state.project.tasks){ if(p.phase) p.collapsed = target; }
+      } else {
+        t.collapsed = !t.collapsed;
+      }
+      render();
+    });
+  });
+  grid.querySelectorAll('.row-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = +btn.dataset.del;
+      // Remove the task AND any deps pointing to it
+      state.project.tasks = state.project.tasks.filter(t => t.id !== id);
+      for(const t of state.project.tasks){
+        if(t.deps) t.deps = t.deps.filter(d => d.id !== id);
+      }
+      render();
+      toast('Tâche supprimée');
+    });
+  });
+  grid.querySelectorAll('.note-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openNoteModal(+btn.dataset.note);
+    });
+  });
+}
+
+function onCellChange(e){
+  const inp = e.target;
+  const field = inp.dataset.field;
+  const cell = inp.closest('.task-cell');
+  const id = +cell.dataset.id;
+  const t = state.project.tasks.find(x => x.id===id);
+  if(!t) return;
+  if(field === 'name') t.name = inp.value;
+  else if(field === 'owner') t.owner = inp.value;
+  else if(field === 'status') t.status = inp.value;
+  else if(field === 'progress') t.progress = Math.max(0, Math.min(100, +inp.value || 0));
+  else if(field === 'startDate'){
+    const newStart = parseISO(inp.value);
+    t.startOffset = Math.max(0, daysBetween(projStart(), newStart));
+  } else if(field === 'endDate'){
+    const newEnd = parseISO(inp.value);
+    const newDur = daysBetween(taskStart(t), newEnd) + 1;
+    t.duration = Math.max(1, newDur);
+  } else if(field === 'deps'){
+    t.deps = parseDeps(inp.value);
+  }
+  render();
+}
+
+// ─── WINDOW SLIDER ───────────────────────────────────────────────────────
+const windowTrack = document.getElementById('windowTrack');
+const windowThumb = document.getElementById('windowThumb');
+const windowReadout = document.getElementById('windowReadout');
+
+function updateWindowThumb(){
+  const total = projDuration();
+  const pctLeft = (state.view.windowStart / total) * 100;
+  const pctWidth = Math.min(100 - pctLeft, (state.view.windowDays / total) * 100);
+  windowThumb.style.left = pctLeft + '%';
+  windowThumb.style.width = Math.max(pctWidth, 4) + '%';
+}
+function updateWindowReadout(){
+  const s = viewStartDate(), e = viewEndDate();
+  windowReadout.innerHTML = `<b>${fmtDate(s)}</b> <small>→</small> <b>${fmtDate(e)}</b><br><small>${state.view.windowDays} j · ${columns.length} ${ZOOM[state.view.zoom].unit}</small>`;
+}
+
+let dragState = null;
+windowThumb.addEventListener('mousedown', e => {
+  e.preventDefault();
+  const r = windowTrack.getBoundingClientRect();
+  dragState = {startX:e.clientX, startLeft:state.view.windowStart, trackWidth:r.width, total:projDuration()};
+});
+windowTrack.addEventListener('click', e => {
+  if(e.target.closest('.window-thumb')) return;
+  const r = windowTrack.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const total = projDuration();
+  const newStart = Math.round((x/r.width)*total - state.view.windowDays/2);
+  state.view.windowStart = Math.max(0, Math.min(total - state.view.windowDays, newStart));
+  render();
+});
+window.addEventListener('mousemove', e => {
+  if(!dragState) return;
+  const dx = e.clientX - dragState.startX;
+  const deltaDays = Math.round((dx/dragState.trackWidth)*dragState.total);
+  state.view.windowStart = Math.max(0, Math.min(dragState.total - state.view.windowDays, dragState.startLeft + deltaDays));
+  render();
+});
+window.addEventListener('mouseup', () => { dragState = null });
+
+scrollWrap.addEventListener('wheel', e => {
+  if(!e.shiftKey) return;
+  e.preventDefault();
+  const total = projDuration();
+  const delta = Math.sign(e.deltaY) * Math.max(1, Math.round(state.view.windowDays * 0.1));
+  state.view.windowStart = Math.max(0, Math.min(total - state.view.windowDays, state.view.windowStart + delta));
+  render();
+}, {passive:false});
+
+// ─── ZOOM ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => setZoom(btn.dataset.zoom));
+});
+function setZoom(newZoom){
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.zoom===newZoom));
+  const oldCenter = state.view.windowStart + state.view.windowDays / 2;
+  state.view.zoom = newZoom;
+  const total = projDuration();
+  if(newZoom === 'day') state.view.windowDays = Math.min(total, 30);
+  else if(newZoom === 'week') state.view.windowDays = Math.min(total, 84);
+  else state.view.windowDays = total;
+  state.view.windowStart = Math.max(0, Math.min(total - state.view.windowDays, Math.round(oldCenter - state.view.windowDays / 2)));
+  render();
+}
+
+// ─── PROJECT FIELDS ──────────────────────────────────────────────────────
+const projName = document.getElementById('projectName');
+const projStartIn = document.getElementById('projectStart');
+const projEndIn = document.getElementById('projectEnd');
+const projPMIn = document.getElementById('projectPM');
+
+projName.addEventListener('input', () => { state.project.name = projName.value });
+projStartIn.addEventListener('change', () => {
+  state.project.start = projStartIn.value;
+  state.view.windowStart = 0;
+  render();
+});
+projEndIn.addEventListener('change', () => {
+  state.project.end = projEndIn.value;
+  const total = projDuration();
+  if(state.view.windowDays > total) state.view.windowDays = total;
+  if(state.view.windowStart >= total) state.view.windowStart = 0;
+  render();
+});
+projPMIn.addEventListener('input', () => { state.project.pm = projPMIn.value });
+
+function syncProjectFields(){
+  projName.value = state.project.name;
+  projStartIn.value = state.project.start;
+  projEndIn.value = state.project.end;
+  projPMIn.value = state.project.pm || '';
+}
+
+// ─── ADD / DELETE — modal-based insertion ────────────────────────────────
+const nextId = arr => Math.max(0, ...arr.map(x => x.id)) + 1;
+
+document.getElementById('btnAddTask').addEventListener('click', () => openTaskModal('task'));
+document.getElementById('addRowBtn').addEventListener('click', () => openTaskModal('task'));
+document.getElementById('addPhaseBtn').addEventListener('click', () => openTaskModal('phase'));
+
+// MODAL refs
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalEl = document.getElementById('modal');
+const modalTitle = document.getElementById('modalTitle');
+const modalName = document.getElementById('modalName');
+const modalInsertAfter = document.getElementById('modalInsertAfter');
+const modalOwner = document.getElementById('modalOwner');
+const modalDuration = document.getElementById('modalDuration');
+const modalStatus = document.getElementById('modalStatus');
+const modalProgress = document.getElementById('modalProgress');
+const modalDeps = document.getElementById('modalDeps');
+const modalNotes = document.getElementById('modalNotes');
+
+function setModalType(type){
+  modalEl.dataset.currentType = type;
+  document.querySelectorAll('#modalType .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  modalTitle.textContent = type === 'phase' ? 'Nouvelle phase' : 'Nouvelle tâche';
+  document.querySelectorAll('.modal .task-only').forEach(el => el.style.display = (type === 'task' ? '' : 'none'));
+  // Adjust default duration when toggling type (only if user hasn't touched the field too much)
+  if(type === 'phase' && (+modalDuration.value === 5 || !modalDuration.value)) modalDuration.value = 14;
+  if(type === 'task' && +modalDuration.value === 14) modalDuration.value = 5;
+}
+
+document.querySelectorAll('#modalType .type-btn').forEach(b => {
+  b.addEventListener('click', () => setModalType(b.dataset.type));
+});
+
+function populateInsertDropdown(defaultAfter){
+  const tasks = state.project.tasks;
+  let html = '<option value="start">— Au début —</option>';
+  for(const t of tasks){
+    const prefix = t.phase ? '▸ PHASE' : '·';
+    const nm = t.name.length > 44 ? t.name.slice(0,44) + '…' : t.name;
+    html += `<option value="${t.id}">Après · ${String(t.id).padStart(2,' ')} · ${escapeHtml(prefix)} ${escapeHtml(nm)}</option>`;
+  }
+  html += '<option value="end">— À la fin —</option>';
+  modalInsertAfter.innerHTML = html;
+  modalInsertAfter.value = (defaultAfter != null ? String(defaultAfter) : 'end');
+}
+
+function openTaskModal(type='task', defaultAfter='end'){
+  setModalType(type);
+  populateInsertDropdown(defaultAfter);
+  modalName.value = '';
+  modalOwner.value = '';
+  modalDuration.value = type === 'phase' ? 14 : 5;
+  modalStatus.value = 'notstarted';
+  modalProgress.value = 0;
+  modalDeps.value = '';
+  modalNotes.value = '';
+  modalBackdrop.classList.add('open');
+  setTimeout(() => { modalName.focus(); modalName.select(); }, 60);
+}
+
+function closeTaskModal(){
+  modalBackdrop.classList.remove('open');
+}
+
+function submitTaskModal(){
+  const type = modalEl.dataset.currentType;
+  const name = modalName.value.trim();
+  if(!name){
+    toast('Le nom est requis', 'error');
+    modalName.focus();
+    return;
+  }
+  const after = modalInsertAfter.value;
+  const duration = Math.max(1, parseInt(modalDuration.value, 10) || (type === 'phase' ? 14 : 5));
+
+  // Compute startOffset based on insertion position
+  let startOffset = 0;
+  if(after === 'start'){
+    startOffset = 0;
+  } else if(after === 'end'){
+    const last = state.project.tasks[state.project.tasks.length - 1];
+    startOffset = last ? last.startOffset + last.duration : 0;
+  } else {
+    const ref = state.project.tasks.find(t => t.id === +after);
+    if(ref) startOffset = ref.startOffset + ref.duration;
+  }
+
+  const newTask = {
+    id: nextId(state.project.tasks),
+    name,
+    owner: type === 'phase' ? '' : modalOwner.value.trim(),
+    startOffset,
+    duration,
+    progress: type === 'phase' ? 0 : Math.max(0, Math.min(100, parseInt(modalProgress.value, 10) || 0)),
+    status: type === 'phase' ? 'notstarted' : modalStatus.value,
+    deps: type === 'phase' ? [] : parseDeps(modalDeps.value),
+    ...(modalNotes.value.trim() ? {notes: modalNotes.value} : {}),
+    ...(type === 'phase' ? {phase: true} : {}),
+  };
+
+  // Insert in tasks array
+  if(after === 'start'){
+    state.project.tasks.unshift(newTask);
+  } else if(after === 'end'){
+    state.project.tasks.push(newTask);
+  } else {
+    const idx = state.project.tasks.findIndex(t => t.id === +after);
+    if(idx === -1) state.project.tasks.push(newTask);
+    else state.project.tasks.splice(idx + 1, 0, newTask);
+  }
+
+  closeTaskModal();
+  render();
+  // Scroll to the new row
+  setTimeout(() => {
+    const row = grid.querySelector(`.task-cell[data-id="${newTask.id}"]`);
+    if(row) row.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 50);
+  toast(type === 'phase' ? 'Phase insérée' : 'Tâche insérée', 'success');
+}
+
+document.getElementById('modalCloseBtn').addEventListener('click', closeTaskModal);
+document.getElementById('modalCancelBtn').addEventListener('click', closeTaskModal);
+document.getElementById('modalSubmitBtn').addEventListener('click', submitTaskModal);
+modalBackdrop.addEventListener('click', e => { if(e.target === modalBackdrop) closeTaskModal(); });
+// Submit on Enter (except in textarea-like cases — we don't have any)
+modalEl.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'TEXTAREA'){
+    e.preventDefault();
+    submitTaskModal();
+  } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey) && e.target.tagName === 'TEXTAREA'){
+    e.preventDefault();
+    submitTaskModal();
+  } else if(e.key === 'Escape'){
+    closeTaskModal();
+  }
+});
+
+// ─── NOTE MODAL ──────────────────────────────────────────────────────────
+const noteModalBackdrop = document.getElementById('noteModalBackdrop');
+const noteModalEl = document.getElementById('noteModal');
+const noteModalTitle = document.getElementById('noteModalTitle');
+const noteModalMeta = document.getElementById('noteModalMeta');
+const noteContent = document.getElementById('noteContent');
+const noteCharCount = document.getElementById('noteCharCount');
+let noteEditingId = null;
+
+function openNoteModal(taskId){
+  const t = state.project.tasks.find(x => x.id === taskId);
+  if(!t) return;
+  noteEditingId = taskId;
+  noteModalMeta.innerHTML = `<span class="nm-id">#${t.id}</span><span>${t.phase ? 'Phase' : 'Tâche'}</span>`;
+  noteModalTitle.textContent = t.name || '(sans nom)';
+  noteModalTitle.title = t.name || '';
+  noteContent.value = t.notes || '';
+  updateNoteCharCount();
+  noteModalBackdrop.classList.add('open');
+  setTimeout(() => {
+    noteContent.focus();
+    // Place caret at end
+    noteContent.setSelectionRange(noteContent.value.length, noteContent.value.length);
+  }, 60);
+}
+
+function closeNoteModal(){
+  noteModalBackdrop.classList.remove('open');
+  noteEditingId = null;
+}
+
+function submitNoteModal(){
+  if(noteEditingId == null) return;
+  const t = state.project.tasks.find(x => x.id === noteEditingId);
+  if(!t) return closeNoteModal();
+  const txt = noteContent.value.trim();
+  if(txt){ t.notes = noteContent.value; }   // preserve internal whitespace, just check non-empty
+  else { delete t.notes; }
+  closeNoteModal();
+  render();
+  toast(txt ? 'Note enregistrée' : 'Note supprimée', 'success');
+}
+
+function deleteNoteModal(){
+  if(noteEditingId == null) return;
+  const t = state.project.tasks.find(x => x.id === noteEditingId);
+  if(!t) return closeNoteModal();
+  delete t.notes;
+  closeNoteModal();
+  render();
+  toast('Note supprimée');
+}
+
+function updateNoteCharCount(){
+  noteCharCount.textContent = noteContent.value.length;
+}
+
+noteContent.addEventListener('input', updateNoteCharCount);
+document.getElementById('noteModalCloseBtn').addEventListener('click', closeNoteModal);
+document.getElementById('noteModalCancelBtn').addEventListener('click', closeNoteModal);
+document.getElementById('noteModalSubmitBtn').addEventListener('click', submitNoteModal);
+document.getElementById('noteModalDeleteBtn').addEventListener('click', deleteNoteModal);
+noteModalBackdrop.addEventListener('click', e => { if(e.target === noteModalBackdrop) closeNoteModal(); });
+noteModalEl.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    submitNoteModal();
+  } else if(e.key === 'Escape'){
+    e.preventDefault();
+    closeNoteModal();
+  }
+});
+
+// ─── SETTINGS DRAWER ─────────────────────────────────────────────────────
+const drawer = document.getElementById('drawer');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+document.getElementById('btnSettings').addEventListener('click', openDrawer);
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+drawerBackdrop.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  if(modalBackdrop.classList.contains('open')) return;
+  if(noteModalBackdrop.classList.contains('open')) return;
+  if(drawer.classList.contains('open')) closeDrawer();
+});
+
+function openDrawer(){
+  renderHolidayPresets();
+  renderHolidayList();
+  renderFreezeList();
+  drawer.classList.add('open');
+  drawerBackdrop.classList.add('open');
+}
+function closeDrawer(){
+  drawer.classList.remove('open');
+  drawerBackdrop.classList.remove('open');
+}
+
+function renderHolidayPresets(){
+  const ps = document.getElementById('holidayPresets');
+  const ys = projStart().getFullYear();
+  const ye = projEnd().getFullYear();
+  const years = [];
+  for(let y=ys; y<=ye; y++) years.push(y);
+  ps.innerHTML = '<span class="color-picker-label">Préréglages</span>'
+    + years.map(y => `<button class="preset-btn" data-yr="${y}">+ Fériés FR ${y}</button>`).join('')
+    + `<button class="preset-btn" data-clear="1" style="color:var(--risk);border-color:var(--risk-bg)">⨯ Tout effacer</button>`;
+  ps.querySelectorAll('[data-yr]').forEach(b => b.addEventListener('click', () => {
+    const yr = +b.dataset.yr;
+    const newOnes = frenchHolidays(yr);
+    const existing = new Set(state.project.holidays.map(h => h.date));
+    let added = 0;
+    for(const h of newOnes){
+      if(!existing.has(h.date)){
+        state.project.holidays.push({id:nextId(state.project.holidays), ...h});
+        added++;
+      }
+    }
+    renderHolidayList(); render();
+    toast(`+ ${added} jours fériés ${yr}`, 'success');
+  }));
+  ps.querySelector('[data-clear]').addEventListener('click', () => {
+    if(state.project.holidays.length === 0) return;
+    state.project.holidays = []; renderHolidayList(); render();
+    toast('Jours fériés effacés');
+  });
+}
+
+function renderHolidayList(){
+  const list = document.getElementById('holidayList');
+  const sorted = [...state.project.holidays].sort((a,b) => a.date.localeCompare(b.date));
+  if(sorted.length === 0){
+    list.innerHTML = `<li class="empty-state">Aucun jour férié. Ajoutez-en un manuellement ou utilisez un préréglage ci-dessus.</li>`;
+    return;
+  }
+  list.innerHTML = sorted.map(h => `
+    <li class="item-card" data-h-id="${h.id}">
+      <div class="item-row">
+        <input type="date" data-field="date" value="${h.date}">
+        <input type="text" data-field="name" value="${escapeHtml(h.name)}" placeholder="Nom du jour férié">
+        <button class="item-del" data-del-h="${h.id}" title="Supprimer">×</button>
+      </div>
+    </li>
+  `).join('');
+  list.querySelectorAll('.item-card input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const id = +inp.closest('.item-card').dataset.hId;
+      const h = state.project.holidays.find(x => x.id===id);
+      if(!h) return;
+      h[inp.dataset.field] = inp.value;
+      render();
+    });
+  });
+  list.querySelectorAll('[data-del-h]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.project.holidays = state.project.holidays.filter(h => h.id !== +btn.dataset.delH);
+      renderHolidayList(); render();
+    });
+  });
+}
+
+document.getElementById('addHoliday').addEventListener('click', () => {
+  state.project.holidays.push({id:nextId(state.project.holidays), date:state.project.start, name:'Nouveau jour férié'});
+  renderHolidayList(); render();
+});
+
+function renderFreezeList(){
+  const list = document.getElementById('freezeList');
+  if(state.project.freezes.length === 0){
+    list.innerHTML = `<li class="empty-state">Aucune période sensible. Définissez par exemple un gel des changements, une fermeture annuelle, ou une période de vigilance.</li>`;
+    return;
+  }
+  list.innerHTML = state.project.freezes.map(fz => `
+    <li class="item-card" data-fz-id="${fz.id}">
+      <div class="item-row">
+        <input type="text" data-field="name" value="${escapeHtml(fz.name)}" placeholder="Nom de la période">
+        <button class="item-del" data-del-fz="${fz.id}" title="Supprimer">×</button>
+      </div>
+      <div class="item-row">
+        <input type="date" data-field="start" value="${fz.start}">
+        <span class="arrow">→</span>
+        <input type="date" data-field="end" value="${fz.end}">
+      </div>
+      <div class="color-picker">
+        <span class="color-picker-label">Type</span>
+        ${FREEZE_COLORS.map(c => `<button class="swatch sw-${c.id} ${c.id===fz.color?'active':''}" data-color="${c.id}" title="${c.label}"></button>`).join('')}
+      </div>
+    </li>
+  `).join('');
+  list.querySelectorAll('.item-card input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const id = +inp.closest('.item-card').dataset.fzId;
+      const fz = state.project.freezes.find(x => x.id===id);
+      if(!fz) return;
+      fz[inp.dataset.field] = inp.value;
+      if(fz.end < fz.start) fz.end = fz.start;
+      renderFreezeList(); render();
+    });
+  });
+  list.querySelectorAll('.swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      const id = +s.closest('.item-card').dataset.fzId;
+      const fz = state.project.freezes.find(x => x.id===id);
+      if(!fz) return;
+      fz.color = s.dataset.color;
+      renderFreezeList(); render();
+    });
+  });
+  list.querySelectorAll('[data-del-fz]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.project.freezes = state.project.freezes.filter(f => f.id !== +btn.dataset.delFz);
+      renderFreezeList(); render();
+    });
+  });
+}
+
+document.getElementById('addFreeze').addEventListener('click', () => {
+  const s = state.project.start;
+  const e = fmtISO(addDays(parseISO(s), 7));
+  state.project.freezes.push({id:nextId(state.project.freezes), name:'Nouvelle période', start:s, end:e, color:'warn'});
+  renderFreezeList(); render();
+});
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────────
+document.getElementById('btnExport').addEventListener('click', () => {
+  // Deep-clean snapshot so the file always round-trips
+  const cleanTasks = state.project.tasks.map(t => ({
+    id: t.id,
+    name: t.name || '',
+    owner: t.owner || '',
+    startOffset: Number.isFinite(+t.startOffset) ? +t.startOffset : 0,
+    duration: Number.isFinite(+t.duration) ? Math.max(1, +t.duration) : 1,
+    progress: Number.isFinite(+t.progress) ? Math.max(0, Math.min(100, +t.progress)) : 0,
+    status: t.status || 'notstarted',
+    deps: Array.isArray(t.deps)
+      ? t.deps.filter(d => d && Number.isFinite(+d.id)).map(d => ({id:+d.id, type:(d.type||'FS').toUpperCase()}))
+      : [],
+    ...(t.phase ? {phase:true} : {}),
+    ...(t.phase && t.collapsed ? {collapsed:true} : {}),
+    ...(t.notes && String(t.notes).trim() ? {notes:String(t.notes)} : {}),
+  }));
+  const cleanProject = {
+    name: state.project.name || 'Projet',
+    pm: state.project.pm || '',
+    start: state.project.start,
+    end: state.project.end,
+    tasks: cleanTasks,
+    holidays: (state.project.holidays || []).filter(h => h && h.date)
+      .map(h => ({id:h.id, date:h.date, name:h.name||''})),
+    freezes: (state.project.freezes || []).filter(f => f && f.start && f.end)
+      .map(f => ({id:f.id, name:f.name||'', start:f.start, end:f.end, color:f.color||'warn'})),
+  };
+  const data = {
+    _meta:{app:'gantt-html', version:'1.2', exportedAt:new Date().toISOString()},
+    project: cleanProject,
+    view: state.view,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (state.project.name || 'projet').replace(/[^a-z0-9-]/gi,'_');
+  a.download = `${safeName}_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Projet exporté', 'success');
+});
+
+const fileInput = document.getElementById('fileInput');
+document.getElementById('btnImport').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    let text = await file.text();
+    // Strip UTF-8 BOM if present
+    if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    text = text.trim();
+    if(!text) throw new Error('Fichier vide');
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(parseErr) {
+      // Surface position information if available
+      const m = parseErr.message.match(/position (\d+)/);
+      if(m){
+        const pos = +m[1];
+        const upTo = text.slice(0, pos);
+        const line = upTo.split('\n').length;
+        const col = pos - upTo.lastIndexOf('\n');
+        const context = text.split('\n')[line-1] || '';
+        throw new Error(`JSON invalide ligne ${line} col ${col} : "${context.slice(Math.max(0,col-15), col+15).trim()}…"`);
+      }
+      throw new Error('JSON invalide : ' + parseErr.message);
+    }
+
+    // Accept either {project: {...}} OR a bare project object
+    const projectData = data.project || (Array.isArray(data.tasks) ? data : null);
+    if(!projectData || !Array.isArray(projectData.tasks)){
+      throw new Error('Format non reconnu — le fichier doit contenir un objet "project" avec un tableau "tasks"');
+    }
+
+    // Build a clean project with safe defaults
+    state.project = {
+      name: projectData.name || 'Projet importé',
+      pm: projectData.pm || '',
+      start: projectData.start || fmtISO(new Date()),
+      end:   projectData.end   || fmtISO(addDays(new Date(), 90)),
+      tasks: projectData.tasks.map(t => ({
+        id: t.id,
+        name: t.name || '',
+        owner: t.owner || '',
+        startOffset: Number.isFinite(+t.startOffset) ? +t.startOffset : 0,
+        duration: Number.isFinite(+t.duration) ? Math.max(1, +t.duration) : 1,
+        progress: Number.isFinite(+t.progress) ? Math.max(0, Math.min(100, +t.progress)) : 0,
+        status: t.status || 'notstarted',
+        deps: Array.isArray(t.deps) ? t.deps.filter(d => d && Number.isFinite(+d.id)).map(d => ({id:+d.id, type:(d.type||'FS').toUpperCase()})) : [],
+        ...(t.phase ? {phase:true} : {}),
+        ...(t.phase && t.collapsed ? {collapsed:true} : {}),
+        ...(t.notes && String(t.notes).trim() ? {notes:String(t.notes)} : {}),
+      })),
+      holidays: Array.isArray(projectData.holidays) ? projectData.holidays.map((h,i) => ({
+        id: Number.isFinite(+h.id) ? +h.id : i+1,
+        date: h.date,
+        name: h.name || ''
+      })).filter(h => h.date) : [],
+      freezes: Array.isArray(projectData.freezes) ? projectData.freezes.map((f,i) => ({
+        id: Number.isFinite(+f.id) ? +f.id : i+1,
+        name: f.name || 'Période',
+        start: f.start,
+        end: f.end,
+        color: f.color || 'warn'
+      })).filter(f => f.start && f.end) : [],
+    };
+
+    if(data.view){
+      state.view = Object.assign({zoom:'week', windowStart:0, windowDays:84}, data.view);
+    } else {
+      state.view = {zoom:'week', windowStart:0, windowDays:Math.min(projDuration(), 84)};
+    }
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.zoom===state.view.zoom));
+    syncProjectFields();
+    render();
+    toast(`Projet importé · ${state.project.tasks.length} tâches`, 'success');
+  } catch(err){
+    console.error('[import]', err);
+    toast(err.message, 'error');
+  }
+  fileInput.value = '';
+});
+
+// ─── TOAST ───────────────────────────────────────────────────────────────
+function toast(msg, kind=''){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if(e.target.matches('input,select,textarea')) return;
+  if(drawer.classList.contains('open')) return;
+  if(modalBackdrop.classList.contains('open')) return;
+  if(noteModalBackdrop.classList.contains('open')) return;
+  if(e.key === 'ArrowLeft'){
+    state.view.windowStart = Math.max(0, state.view.windowStart - ZOOM[state.view.zoom].step);
+    render();
+  } else if(e.key === 'ArrowRight'){
+    const total = projDuration();
+    state.view.windowStart = Math.min(total - state.view.windowDays, state.view.windowStart + ZOOM[state.view.zoom].step);
+    render();
+  } else if(e.key === '1'){ setZoom('day') }
+  else if(e.key === '2'){ setZoom('week') }
+  else if(e.key === '3'){ setZoom('month') }
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────
+state.view.windowDays = Math.min(projDuration(), 84);
+syncProjectFields();
+render();
+</script>
+</body>
+</html>
